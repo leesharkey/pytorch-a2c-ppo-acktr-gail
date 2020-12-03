@@ -34,7 +34,7 @@ def get_args():
         '--alpha',
         type=float,
         default=0.99,
-        help='RMSprop optimizer apha (default: 0.99)')
+        help='RMSprop optimizer alpha (default: 0.99)')
     parser.add_argument(
         '--gamma',
         type=float,
@@ -119,8 +119,16 @@ def get_args():
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
         '--env-name',
-        default='PongNoFrameskip-v4',
-        help='environment to train on (default: PongNoFrameskip-v4)')
+        # default='PongNoFrameskip-v4',
+        # # help='environment to train on (default: PongNoFrameskip-v4)')
+        # default = "BanditTwoArmedHighLowFixed-v0",
+        # help = 'environment to train on (default: BanditTwoArmedHighLowFixed-v0)')
+        # default="BanditTwoArmedDirichletSequential-v0",
+        # help='environment to train on (default: BanditTwoArmedHighLowFixed-v0)')
+        # default = "Copy-v0",
+        # help = 'environment to train on (default: CopyEnv)')
+        default='CartPole-v0',
+        help='environment to train on (default: CartPole-v0)')
     parser.add_argument(
         '--log-dir',
         default='/tmp/gym/',
