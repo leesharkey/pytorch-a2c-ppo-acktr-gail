@@ -8,23 +8,7 @@ def get_args():
     parser.add_argument(
         '--algo', default='a2c', help='algorithm to use: a2c | ppo | acktr')
     parser.add_argument(
-        '--gail',
-        action='store_true',
-        default=False,
-        help='do imitation learning with gail')
-    parser.add_argument(
-        '--gail-experts-dir',
-        default='./gail_experts',
-        help='directory that contains expert demonstrations for gail')
-    parser.add_argument(
-        '--gail-batch-size',
-        type=int,
-        default=128,
-        help='gail batch size (default: 128)')
-    parser.add_argument(
-        '--gail-epoch', type=int, default=5, help='gail epochs (default: 5)')
-    parser.add_argument(
-        '--lr', type=float, default=7e-4, help='learning rate (default: 7e-4)')
+        '--lr', type=float, default=1e-4, help='learning rate (default: 7e-4)')
     parser.add_argument(
         '--eps',
         type=float,
@@ -43,7 +27,7 @@ def get_args():
     parser.add_argument(
         '--use-gae',
         action='store_true',
-        default=False,
+        default=True,
         help='use generalized advantage estimation')
     parser.add_argument(
         '--gae-lambda',
@@ -75,12 +59,12 @@ def get_args():
     parser.add_argument(
         '--num-processes',
         type=int,
-        default=16,
+        default=32,
         help='how many training CPU processes to use (default: 16)')
     parser.add_argument(
         '--num-steps',
         type=int,
-        default=5,
+        default=40,
         help='number of forward steps in A2C (default: 5)')
     parser.add_argument(
         '--ppo-epoch',
@@ -123,12 +107,12 @@ def get_args():
         # # help='environment to train on (default: PongNoFrameskip-v4)')
         # default = "BanditTwoArmedHighLowFixed-v0",
         # help = 'environment to train on (default: BanditTwoArmedHighLowFixed-v0)')
-        # default="BanditTwoArmedDirichletSequential-v0",
-        # help='environment to train on (default: BanditTwoArmedHighLowFixed-v0)')
-        # default = "Copy-v0",
+        default="Bandit-v0",
+        help='environment to train on (default: Bandit-v0)')
+        # default = "Pendulum-v0",
         # help = 'environment to train on (default: CopyEnv)')
-        default='CartPole-v0',
-        help='environment to train on (default: CartPole-v0)')
+        # default='CartPole-v0',
+        # help='environment to train on (default: CartPole-v0)')
     parser.add_argument(
         '--log-dir',
         default='/tmp/gym/',
@@ -145,12 +129,12 @@ def get_args():
     parser.add_argument(
         '--use-proper-time-limits',
         action='store_true',
-        default=False,
+        default=True,
         help='compute returns taking into account time limits')
     parser.add_argument(
         '--recurrent-policy',
         action='store_true',
-        default=False,
+        default=True,
         help='use a recurrent policy')
     parser.add_argument(
         '--use-linear-lr-decay',

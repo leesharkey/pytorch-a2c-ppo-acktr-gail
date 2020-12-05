@@ -205,13 +205,18 @@ class MLPBase(NNBase):
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
                                constant_(x, 0), np.sqrt(2))
 
-        self.actor = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+        # self.actor = nn.Sequential(
+        #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+        #     init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
 
-        self.critic = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+        # self.critic = nn.Sequential(
+        #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+        #     init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+
+        # self.critic_linear = init_(nn.Linear(hidden_size, 1))
+
+        self.actor  = nn.Identity(num_inputs)
+        self.critic = nn.Identity(num_inputs)
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
@@ -226,4 +231,5 @@ class MLPBase(NNBase):
         hidden_critic = self.critic(x)
         hidden_actor = self.actor(x)
 
+        # return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
         return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
