@@ -25,12 +25,19 @@ class RolloutStorage(object):
             self.actions = self.actions.long()
         self.masks = torch.ones(num_steps + 1, num_processes, 1)
 
+        self.p_dists = torch.zeros(num_steps + 1, num_processes, 2)
+
         # Masks that indicate whether it's a true terminal state
         # or time limit end state
         self.bad_masks = torch.ones(num_steps + 1, num_processes, 1)
 
+        self.episode_step_idxs = torch.zeros(num_steps)
+        self.global_step_idxs  = torch.zeros(num_steps)
+
         self.num_steps = num_steps
         self.step = 0
+        self.episode_step = 0
+        self.global_step = 0
 
     def to(self, device):
         self.obs = self.obs.to(device)
@@ -42,9 +49,13 @@ class RolloutStorage(object):
         self.actions = self.actions.to(device)
         self.masks = self.masks.to(device)
         self.bad_masks = self.bad_masks.to(device)
+        self.p_dists = self.p_dists.to(device)
+
+        self.episode_step_idxs = self.episode_step_idxs.to(device)
+        self.global_step_idxs  = self.global_step_idxs.to(device)
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
-               value_preds, rewards, masks, bad_masks):
+               value_preds, rewards, masks, bad_masks, p_dists):
         self.obs[self.step + 1].copy_(obs)
         self.recurrent_hidden_states[self.step +
                                      1].copy_(recurrent_hidden_states)
@@ -55,13 +66,40 @@ class RolloutStorage(object):
         self.masks[self.step + 1].copy_(masks)
         self.bad_masks[self.step + 1].copy_(bad_masks)
 
-        self.step = (self.step + 1) % self.num_steps
+        self.p_dists[self.step + 1].copy_(p_dists)
+        if self.step == 0:
+            self.p_dists[self.step].copy_(p_dists)
 
-    def after_update(self):
+        self.episode_step_idxs[self.step] = self.episode_step
+        self.global_step_idxs[self.step]  = self.global_step
+
+        self.step = (self.step + 1) % self.num_steps
+        self.episode_step = (self.episode_step + 1) % 200
+        self.global_step += 1
+
+    def save_experimental_data(self, save_dir):
+        save_dict = {'obs': self.obs,
+                     'recurrent_hidden_states': self.recurrent_hidden_states,
+                     'rewards': self.rewards,
+                     'value_preds': self.value_preds,
+                     'returns': self.returns,
+                     'action_log_probs': self.action_log_probs,
+                     'actions': self.actions,
+                     'masks': self.masks,
+                     'bad_masks': self.bad_masks,
+                     'p_dists': self.p_dists,
+                     'episode_step_idxs': self.episode_step_idxs,
+                     'global_step_idxs': self.global_step_idxs}
+        torch.save(save_dict, save_dir + '/' + \
+                   'step_{}.pt'.format(self.global_step))
+
+    def after_update(self): #TODO check whether the new objects you made (pdists, step_idxs) are reset in the correct way here
         self.obs[0].copy_(self.obs[-1])
         self.recurrent_hidden_states[0].copy_(self.recurrent_hidden_states[-1])
         self.masks[0].copy_(self.masks[-1])
         self.bad_masks[0].copy_(self.bad_masks[-1])
+
+        self.p_dists[0].copy_(self.p_dists[-1])
 
     def compute_returns(self,
                         next_value,
