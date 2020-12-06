@@ -310,7 +310,7 @@ def main():
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
-        # TODO remove the print statement "Logging to /tmp/openai-2020-12-05-23-00-28-039694
+
         if args.training:
             value_loss, action_loss, dist_entropy = agent.update(rollouts)
 
