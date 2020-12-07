@@ -78,18 +78,18 @@ class RolloutStorage(object):
         self.global_step += 1
 
     def save_experimental_data(self, save_dir):
-        save_dict = {'obs': self.obs,
-                     'recurrent_hidden_states': self.recurrent_hidden_states,
-                     'rewards': self.rewards,
-                     'value_preds': self.value_preds,
-                     'returns': self.returns,
-                     'action_log_probs': self.action_log_probs,
-                     'actions': self.actions,
-                     'masks': self.masks,
-                     'bad_masks': self.bad_masks,
-                     'p_dists': self.p_dists,
-                     'episode_step_idxs': self.episode_step_idxs,
-                     'global_step_idxs': self.global_step_idxs}
+        save_dict = {'obs': self.obs.clone().cpu().numpy(),
+                     'recurrent_hidden_states': self.recurrent_hidden_states.clone().cpu().numpy(),
+                     'rewards': self.rewards.clone().cpu().numpy(),
+                     'value_preds': self.value_preds.clone().cpu().numpy(),
+                     'returns': self.returns.clone().cpu().numpy(),
+                     'action_log_probs': self.action_log_probs.clone().cpu().numpy(),
+                     'actions': self.actions.clone().cpu().numpy(),
+                     'masks': self.masks.clone().cpu().numpy(),
+                     'bad_masks': self.bad_masks.clone().cpu().numpy(),
+                     'p_dists': self.p_dists.clone().cpu().numpy(),
+                     'episode_step_idxs': self.episode_step_idxs.clone().cpu().numpy(),
+                     'global_step_idxs': self.global_step_idxs.clone().cpu().numpy()}
         torch.save(save_dict, save_dir + '/' + \
                    'step_{}.pt'.format(self.global_step))
 

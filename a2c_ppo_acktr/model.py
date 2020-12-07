@@ -88,7 +88,7 @@ class NNBase(nn.Module):
         self._hidden_size = hidden_size
         self._recurrent = recurrent
 
-        if recurrent:
+        if recurrent: # TODO make a local file for GRU that also returns the other hidden states
             self.gru = nn.GRU(recurrent_input_size, hidden_size)
             for name, param in self.gru.named_parameters():
                 if 'bias' in name:
