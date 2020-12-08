@@ -4,6 +4,8 @@ import os
 import time
 from collections import deque
 
+# TODO remove warning for tensorflow and for pytorch nonzero
+
 import gym
 import numpy as np
 import torch
@@ -78,7 +80,7 @@ def get_args():
         default=False,
         help="Whether or not to train the model")
     parser.add_argument(
-        '--save_experimental_data',
+        '--save-experimental-data',
         action='store_true',
         default=False,
         help="Whether or not to save experimental data for analysis")
@@ -118,7 +120,7 @@ def get_args():
         default=100,
         help='save interval, one save per n updates (default: 100)')
     parser.add_argument(
-        '--load_id',
+        '--load-id',
         type=str,
         help='The ID of the model to load (only if a model is to be loaded)')
     parser.add_argument(
@@ -218,6 +220,7 @@ def main():
     utils.save_configs_to_csv(args, session_name=session_name,
                               model_name=model_name, unique_id=unique_id)
 
+    # Set up envs and model etc
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, data_logs_dir_uniq, device, False)
 
@@ -317,7 +320,13 @@ def main():
         if args.save_experimental_data:
             rollouts.save_experimental_data(save_dir=data_logs_dir_uniq)
 
-        rollouts.after_update()
+        if "Bandit" in args.env_name:
+            reset_hxs_every_episode = True
+        else: # This will only work out if the num_steps is equal to the
+            # num of steps in a bandit episode, which is currently hard-coded
+            # to be 200
+            reset_hxs_every_episode = False
+        rollouts.after_update(reset_hxs_every_episode)
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0 or j == num_updates - 1):
