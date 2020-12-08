@@ -93,12 +93,15 @@ class RolloutStorage(object):
         torch.save(save_dict, save_dir + '/' + \
                    'step_{}.pt'.format(self.global_step))
 
-    def after_update(self): #TODO check whether the new objects you made (pdists, step_idxs) are reset in the correct way here
+    def after_update(self, reset_hxs=False): #TODO check whether the new objects you made (pdists, step_idxs) are reset in the correct way here
         self.obs[0].copy_(self.obs[-1])
-        self.recurrent_hidden_states[0].copy_(self.recurrent_hidden_states[-1])
+
+        if reset_hxs:
+            self.recurrent_hidden_states[0].copy_(torch.zeros_like(self.recurrent_hidden_states[-1]))
+        else:
+            self.recurrent_hidden_states[0].copy_(self.recurrent_hidden_states[-1])
         self.masks[0].copy_(self.masks[-1])
         self.bad_masks[0].copy_(self.bad_masks[-1])
-
         self.p_dists[0].copy_(self.p_dists[-1])
 
     def compute_returns(self,
@@ -112,12 +115,9 @@ class RolloutStorage(object):
                 self.value_preds[-1] = next_value
                 gae = 0
                 for step in reversed(range(self.rewards.size(0))):
-                    delta = self.rewards[step] + gamma * self.value_preds[
-                        step + 1] * self.masks[step +
-                                               1] - self.value_preds[step]
-                    gae = delta + gamma * gae_lambda * self.masks[step +
-                                                                  1] * gae
-                    gae = gae * self.bad_masks[step + 1]
+                    delta = self.rewards[step] + gamma * self.value_preds[step + 1] * self.masks[step + 1] - self.value_preds[step]
+                    gae = delta + gamma * gae_lambda * self.masks[step + 1] * gae
+                    gae = gae * self.bad_masks[step + 1]  # 0 if end of episode
                     self.returns[step] = gae + self.value_preds[step]
             else:
                 self.returns[-1] = next_value
@@ -130,11 +130,8 @@ class RolloutStorage(object):
                 self.value_preds[-1] = next_value
                 gae = 0
                 for step in reversed(range(self.rewards.size(0))):
-                    delta = self.rewards[step] + gamma * self.value_preds[
-                        step + 1] * self.masks[step +
-                                               1] - self.value_preds[step]
-                    gae = delta + gamma * gae_lambda * self.masks[step +
-                                                                  1] * gae
+                    delta = self.rewards[step] + gamma * self.value_preds[step + 1] * self.masks[step + 1] - self.value_preds[step]
+                    gae = delta + gamma * gae_lambda * self.masks[step + 1] * gae
                     self.returns[step] = gae + self.value_preds[step]
             else:
                 self.returns[-1] = next_value
