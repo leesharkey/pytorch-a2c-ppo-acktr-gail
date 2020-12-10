@@ -96,7 +96,7 @@ class RolloutStorage(object):
     def after_update(self, reset_hxs=False): #TODO check whether the new objects you made (pdists, step_idxs) are reset in the correct way here
         self.obs[0].copy_(self.obs[-1])
 
-        if reset_hxs:
+        if reset_hxs and self.masks[-1].sum() == 0.:
             self.recurrent_hidden_states[0].copy_(torch.zeros_like(self.recurrent_hidden_states[-1]))
         else:
             self.recurrent_hidden_states[0].copy_(self.recurrent_hidden_states[-1])
