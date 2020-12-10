@@ -94,7 +94,7 @@ class NNBase(nn.Module):
                 if 'bias' in name:
                     nn.init.constant_(param, 0)
                 elif 'weight' in name:
-                    nn.init.orthogonal_(param)
+                    nn.init.orthogonal_(param) * 0.00000001 #TODO development test
 
     @property
     def is_recurrent(self):
