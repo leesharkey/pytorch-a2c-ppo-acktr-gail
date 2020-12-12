@@ -54,6 +54,19 @@ class Policy(nn.Module):
         raise NotImplementedError
 
     def act(self, inputs, rnn_hxs, masks, deterministic=False):
+        """Steps forward the model by one step
+
+        Args:
+            inputs (tensor): Shape is  [num_processes, obs_size]
+            rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
+            masks (tensor): Shape is   [num_processes, 1]
+
+        Returns:
+            value (tensor): Shape is [num_processes, 1]
+            action (tensor): Shape is [num_processes, 1]
+            action_log_probs (tensor): Shape is [num_processes, 1]
+            rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
+        """
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
         dist = self.dist(actor_features)
 
@@ -68,16 +81,41 @@ class Policy(nn.Module):
         return value, action, action_log_probs, rnn_hxs
 
     def get_value(self, inputs, rnn_hxs, masks):
+        """Steps forward the model by one step but only returns the value
+
+        This is to be used at the very end of an episode
+
+        Args:
+            inputs (tensor): Shape is  [num_processes, obs_size]
+            rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
+            masks (tensor): Shape is   [num_processes, 1]
+
+        Returns:
+            value (tensor): Shape is [num_processes, 1]
+        """
         value, _, _ = self.base(inputs, rnn_hxs, masks)
         return value
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
+        """Calculates terms needed for loss calculation
+
+        Calculates values, action_log_probs and dist_entropy
+
+        Args:
+            inputs (tensor): Shape is  [num_processes * num_steps, obs_size]
+            rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
+            masks (tensor): Shape is   [num_processes * num_steps, 1]
+
+        Returns:
+            value (tensor): Shape is [num_processes, 1]
+            action (tensor): Shape is [num_processes, 1]
+            action_log_probs (tensor): Shape is [num_processes, 1]
+            rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
+        """
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
         dist = self.dist(actor_features)
-
         action_log_probs = dist.log_probs(action)
         dist_entropy = dist.entropy().mean()
-
         return value, action_log_probs, dist_entropy, rnn_hxs
 
 
