@@ -279,9 +279,10 @@ def main():
         for step in range(args.num_steps):
             # Sample actions
             with torch.no_grad():
-                value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
-                    rollouts.obs[step], rollouts.recurrent_hidden_states[step],
-                    rollouts.masks[step])
+                value, action, action_log_prob, recurrent_hidden_states = \
+                    actor_critic.act(rollouts.obs[step],
+                                     rollouts.recurrent_hidden_states[step],
+                                     rollouts.masks[step])
 
             # Obser reward and next obs
             # envs.render()
