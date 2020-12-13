@@ -105,6 +105,7 @@ class Policy(nn.Module):
             inputs (tensor): Shape is  [num_processes * num_steps, obs_size]
             rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
             masks (tensor): Shape is   [num_processes * num_steps, 1]
+            masks (tensor): Shape is   [num_processes * num_steps, 1]
 
         Returns:
             value (tensor): Shape is [num_processes, 1]
