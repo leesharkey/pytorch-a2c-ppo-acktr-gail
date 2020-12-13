@@ -92,8 +92,14 @@ def get_args():
     parser.add_argument(
         '--num-steps',
         type=int,
-        default=200,
+        default=40,
         help='number of forward steps in A2C (default: 5)')
+    parser.add_argument(
+        '--shift-len',
+        type=int,
+        default=10,
+        help='number of steps to shift the rollout forward each update' +
+             ' (default: 10)')
     parser.add_argument(
         '--ppo-epoch',
         type=int,
@@ -237,6 +243,7 @@ def main():
 
     if args.algo == 'a2c':
         agent = algo.A2C(
+            args,
             actor_critic,
             args.value_loss_coef,
             args.entropy_coef,
@@ -246,6 +253,9 @@ def main():
             max_grad_norm=args.max_grad_norm)
     elif args.algo == 'ppo':
         agent = algo.PPO(
+            args, # todo change ppo script to include args (which was added
+            # to help make the training fully episodic and with overlapping
+            # segments)
             actor_critic,
             args.clip_param,
             args.ppo_epoch,
@@ -256,7 +266,7 @@ def main():
             eps=args.eps,
             max_grad_norm=args.max_grad_norm)
 
-    rollouts = RolloutStorage(args.num_steps, args.num_processes,
+    rollouts = RolloutStorage(200, args.num_processes,
                               envs.observation_space.shape, envs.action_space,
                               actor_critic.recurrent_hidden_state_size)
 
@@ -267,16 +277,16 @@ def main():
     episode_rewards = deque(maxlen=10)
 
     start = time.time()
-    num_updates = int(
-        args.num_env_steps) // args.num_steps // args.num_processes
-    for j in range(num_updates):
+    num_episodes = int(10e9)
+
+    for j in range(num_episodes):
 
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
             utils.update_linear_schedule(
-                agent.optimizer, j, num_updates, args.lr)
+                agent.optimizer, j, num_episodes, args.lr)
 
-        for step in range(args.num_steps):
+        for step in range(200):
             # Sample actions
             with torch.no_grad():
                 value, action, action_log_prob, recurrent_hidden_states = \
@@ -323,22 +333,20 @@ def main():
 
         if "Bandit" in args.env_name:
             reset_hxs_every_episode = True
-        else: # This will only work out if the num_steps is equal to the
-            # num of steps in a bandit episode, which is currently hard-coded
-            # to be 200
+        else:
             reset_hxs_every_episode = False
         rollouts.after_update(reset_hxs_every_episode)
 
         # save for every interval-th episode or for the last epoch
-        if (j % args.save_interval == 0 or j == num_updates - 1):
+        if (j % args.save_interval == 0 or j == num_episodes - 1):
             torch.save(actor_critic,
                        os.path.join(models_dir, unique_id + ".pt"))
 
         if j % args.log_interval == 0 and len(episode_rewards) > 1 and args.training:
-            total_num_steps = (j + 1) * args.num_processes * args.num_steps
+            total_num_steps = (j + 1) * args.num_processes * 200
             end = time.time()
             print(
-                "Updates {}, num timesteps {}, FPS {}. Entropy: {:.4f} , Value loss: {:.4f}, Policy loss: {:.4f}, \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
+                "Episodes {}, num timesteps {}, FPS {}. Entropy: {:.4f} , Value loss: {:.4f}, Policy loss: {:.4f}, \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
                 .format(j, total_num_steps,
                         int(total_num_steps / (end - start)), dist_entropy,
                         value_loss, action_loss,
@@ -346,10 +354,10 @@ def main():
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards)))
         elif j % args.log_interval == 0 and len(episode_rewards) > 1:
-            total_num_steps = (j + 1) * args.num_processes * args.num_steps
+            total_num_steps = (j + 1) * args.num_processes * 200
             end = time.time()
             print(
-                "Updates {}, num timesteps {}. \n"
+                "Episodes {}, num timesteps {}. \n"
                 .format(j, total_num_steps))
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
