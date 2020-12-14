@@ -18,6 +18,8 @@ class RolloutStorage(object):
         self.action_log_probs = torch.zeros(num_steps, num_processes, 1)
         self.episode_len = num_steps
 
+        #TODO r and z storage and saving
+
         if action_space.__class__.__name__ == 'Discrete':
             action_shape = 1
         else:
@@ -106,7 +108,7 @@ class RolloutStorage(object):
         else:
             self.recurrent_hidden_states[0].copy_(
                 self.recurrent_hidden_states[-1])
-        self.masks[0].copy_(self.masks[-1])
+        self.masks[0].copy_(self.masks[-1]) #TODO consider torch.ones_like(self.masks[-1])) so that the first step of the gru isn't using a 0 mask.
         self.bad_masks[0].copy_(self.bad_masks[-1])
         self.p_dists[0].copy_(self.p_dists[-1])
 

@@ -129,6 +129,7 @@ class NNBase(nn.Module):
 
         if recurrent: # TODO make a local file for GRU that also returns the other hidden states
             self.gru = nn.GRU(recurrent_input_size, hidden_size)
+            # TODO: self.gru = CustomGRU(recurrent_input_size, hidden_size)
             for name, param in self.gru.named_parameters():
                 if 'bias' in name:
                     nn.init.constant_(param, 0)
@@ -151,7 +152,15 @@ class NNBase(nn.Module):
 
     def _forward_gru(self, x, hxs, masks):
         if x.size(0) == hxs.size(0):
+            # TODO return z and r vecs too
             x, hxs = self.gru(x.unsqueeze(0), (hxs * masks).unsqueeze(0))
+            """
+            x.shape     torch.Size([1, 32, 64]) (diff from below)
+            hxs.shape   torch.Size([1, 32, 64]) (same as below)
+            masks.shape torch.Size([32, 1])     (diff from below)
+            masks[start_idx].view(1, -1, 1)     torch.Size([1, 32, 1])
+
+            """
             x = x.squeeze(0)
             hxs = hxs.squeeze(0)
         else:
@@ -191,6 +200,15 @@ class NNBase(nn.Module):
                 start_idx = has_zeros[i]
                 end_idx = has_zeros[i + 1]
 
+                """
+                x.shape     torch.Size([40, 32, 3])
+                hxs.shape   torch.Size([1, 32, 64])
+                masks.shape torch.Size([40, 32])
+                masks[start_idx].view(1, -1, 1)     torch.Size([1, 32, 1])
+
+                """
+
+                # TODO return z and r vecs too
                 rnn_scores, hxs = self.gru(
                     x[start_idx:end_idx],
                     hxs * masks[start_idx].view(1, -1, 1))
@@ -231,6 +249,7 @@ class CNNBase(NNBase):
         x = self.main(inputs / 255.0)
 
         if self.is_recurrent:
+
             x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
 
         return self.critic_linear(x), x, rnn_hxs
@@ -267,10 +286,10 @@ class MLPBase(NNBase):
         x = inputs
 
         if self.is_recurrent:
+            # TODO return z and r vecs too
             x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
 
         hidden_critic = self.critic(x)
         hidden_actor = self.actor(x)
 
-        # return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
-        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs  # TODO return z and r vecs too
