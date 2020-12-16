@@ -21,6 +21,14 @@ from evaluation import evaluate
 
 import argparse
 
+from gym.envs.registration import registry, register, make, spec
+
+register(
+    id='Bandit-v0',
+    entry_point='bandit:BanditEnv',
+    max_episode_steps=200
+)
+
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
     parser.add_argument(
