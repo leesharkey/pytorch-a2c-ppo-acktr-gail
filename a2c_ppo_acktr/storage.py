@@ -18,7 +18,7 @@ class RolloutStorage(object):
         self.action_log_probs = torch.zeros(num_steps, num_processes, 1)
         self.episode_len = num_steps
 
-        #TODO r and z storage and saving
+        #TODOnow internals
 
         if action_space.__class__.__name__ == 'Discrete':
             action_shape = 1
@@ -54,6 +54,7 @@ class RolloutStorage(object):
         self.masks = self.masks.to(device)
         self.bad_masks = self.bad_masks.to(device)
         self.p_dists = self.p_dists.to(device)
+        # TODOnow internals
 
         self.episode_step_idxs = self.episode_step_idxs.to(device)
         self.global_step_idxs  = self.global_step_idxs.to(device)
@@ -74,6 +75,8 @@ class RolloutStorage(object):
         if self.step == 0:
             self.p_dists[self.step].copy_(p_dists)
 
+        # TODOnow internals
+
         self.episode_step_idxs[self.step] = self.episode_step
         self.global_step_idxs[self.step]  = self.global_step
 
@@ -82,6 +85,7 @@ class RolloutStorage(object):
         self.global_step += 1
 
     def save_experimental_data(self, save_dir):
+        # TODOnow internals
         save_dict = {'obs': self.obs.clone().cpu().numpy(),
                      'recurrent_hidden_states': self.recurrent_hidden_states.clone().cpu().numpy(),
                      'rewards': self.rewards.clone().cpu().numpy(),

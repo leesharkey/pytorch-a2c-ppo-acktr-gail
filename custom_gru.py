@@ -19,6 +19,17 @@ class CustomGRU(nn.Module):
         self.gru_cell = GRUCell(recurrent_input_size, hidden_size)
 
     def forward(self, x, h0):
+        """Steps the GRUCell forward n times according to number of obs.
+
+        Args:
+            x: Observations. Shape either [numproc, obssize] or
+                [num_timesteps, numproc, obssize]
+            h0: Initial state.
+
+        Returns:
+            True if successful, False otherwise.
+
+        """
         # x arrives as shape either [numproc, obssize] or [num_timesteps, numproc, obssize]
         outs = []
         ht = h0
@@ -54,6 +65,17 @@ class GRUCell(nn.Module):
             w.data.uniform_(-std, std)
 
     def forward(self, x, hidden):
+        """Steps the GRUCell forward 1 time.
+
+        Args:
+            x: Observations. Shape either [numproc, obssize] or
+                [num_timesteps, numproc, obssize]
+            h: Current hidden state.
+
+        Returns:
+            True if successful, False otherwise.
+
+        """
         #TODO implement GRU with right dimensions etc. and returning the
         # desired properties.
         x = x.view(-1, x.size(1))
