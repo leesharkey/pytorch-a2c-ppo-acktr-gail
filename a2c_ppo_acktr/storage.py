@@ -102,13 +102,13 @@ class RolloutStorage(object):
         #  are reset in the correct way here
         self.obs[0].copy_(self.obs[-1])
 
-        if reset_hxs and self.masks[-1].sum() == 0.:
+        if reset_hxs and self.masks[-1].sum() == 0.: #means: if reset_hxs and done
             self.recurrent_hidden_states[0].copy_(
                 torch.zeros_like(self.recurrent_hidden_states[-1]))
         else:
             self.recurrent_hidden_states[0].copy_(
                 self.recurrent_hidden_states[-1])
-        self.masks[0].copy_(self.masks[-1]) #TODO consider torch.ones_like(self.masks[-1])) so that the first step of the gru isn't using a 0 mask.
+        self.masks[0].copy_(self.masks[-1])
         self.bad_masks[0].copy_(self.bad_masks[-1])
         self.p_dists[0].copy_(self.p_dists[-1])
 
