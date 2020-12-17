@@ -288,8 +288,8 @@ def main():
 
         for step in range(200):
             # Sample actions
-            with torch.no_grad():
-                value, action, action_log_prob, recurrent_hidden_states = \
+            with torch.no_grad(): #TODOnow internals
+                value, action, action_log_prob, recurrent_hidden_states, internals  = \
                     actor_critic.act(rollouts.obs[step],
                                      rollouts.recurrent_hidden_states[step],
                                      rollouts.masks[step])
@@ -315,7 +315,7 @@ def main():
 
             rollouts.insert(obs, recurrent_hidden_states, action,
                             action_log_prob, value, reward, masks,
-                            bad_masks, p_dists)
+                            bad_masks, p_dists)#TODOnow internals
 
         with torch.no_grad():
             next_value = actor_critic.get_value(

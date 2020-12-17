@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from custom_gru import CustomGRU
 
 from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian
 from a2c_ppo_acktr.utils import init
@@ -67,7 +68,7 @@ class Policy(nn.Module):
             action_log_probs (tensor): Shape is [num_processes, 1]
             rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
         """
-        value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
+        value, actor_features, rnn_hxs, internals = self.base(inputs, rnn_hxs, masks)
         dist = self.dist(actor_features)
 
         if deterministic:
@@ -78,7 +79,7 @@ class Policy(nn.Module):
         action_log_probs = dist.log_probs(action)
         dist_entropy = dist.entropy().mean()
 
-        return value, action, action_log_probs, rnn_hxs
+        return value, action, action_log_probs, rnn_hxs, internals
 
     def get_value(self, inputs, rnn_hxs, masks):
         """Steps forward the model by one step but only returns the value
@@ -93,7 +94,7 @@ class Policy(nn.Module):
         Returns:
             value (tensor): Shape is [num_processes, 1]
         """
-        value, _, _ = self.base(inputs, rnn_hxs, masks)
+        value, _, _, _ = self.base(inputs, rnn_hxs, masks)
         return value
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
@@ -113,7 +114,7 @@ class Policy(nn.Module):
             action_log_probs (tensor): Shape is [num_processes, 1]
             rnn_hxs (tensor): Shape is [num_processes, rnn_hidden_state_size]
         """
-        value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
+        value, actor_features, rnn_hxs, _ = self.base(inputs, rnn_hxs, masks)
         dist = self.dist(actor_features)
         action_log_probs = dist.log_probs(action)
         dist_entropy = dist.entropy().mean()
@@ -127,9 +128,9 @@ class NNBase(nn.Module):
         self._hidden_size = hidden_size
         self._recurrent = recurrent
 
-        if recurrent: # TODO make a local file for GRU that also returns the other hidden states
-            self.gru = nn.GRU(recurrent_input_size, hidden_size)
-            # TODO: self.gru = CustomGRU(recurrent_input_size, hidden_size)
+        if recurrent:
+            # self.gru = nn.GRU(recurrent_input_size, hidden_size)
+            self.gru = CustomGRU(recurrent_input_size, hidden_size)
             for name, param in self.gru.named_parameters():
                 if 'bias' in name:
                     nn.init.constant_(param, 0)
@@ -152,8 +153,8 @@ class NNBase(nn.Module):
 
     def _forward_gru(self, x, hxs, masks):
         if x.size(0) == hxs.size(0):
-            # TODO return z and r vecs too
-            x, hxs = self.gru(x.unsqueeze(0), (hxs * masks).unsqueeze(0))
+            x, hxs, internals = self.gru(x.unsqueeze(0),
+                                         (hxs * masks).unsqueeze(0))
             """
             x.shape     torch.Size([1, 32, 64]) (diff from below)
             hxs.shape   torch.Size([1, 32, 64]) (same as below)
@@ -208,8 +209,7 @@ class NNBase(nn.Module):
 
                 """
 
-                # TODO return z and r vecs too
-                rnn_scores, hxs = self.gru(
+                rnn_scores, hxs, internals = self.gru(
                     x[start_idx:end_idx],
                     hxs * masks[start_idx].view(1, -1, 1))
 
@@ -222,7 +222,7 @@ class NNBase(nn.Module):
             x = x.view(T * N, -1)
             hxs = hxs.squeeze(0)
 
-        return x, hxs
+        return x, hxs, internals
 
 
 class CNNBase(NNBase):
@@ -286,10 +286,9 @@ class MLPBase(NNBase):
         x = inputs
 
         if self.is_recurrent:
-            # TODO return z and r vecs too
-            x, rnn_hxs = self._forward_gru(x, rnn_hxs, masks)
+            x, rnn_hxs, internals = self._forward_gru(x, rnn_hxs, masks)
 
         hidden_critic = self.critic(x)
         hidden_actor = self.actor(x)
 
-        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs  # TODO return z and r vecs too
+        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs, internals
