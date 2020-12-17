@@ -77,7 +77,7 @@ class GRUCell(nn.Module):
         gate_x = self.x2h(x)
         gate_h = self.h2h(hidden)
 
-        if gate_x.size(0) != 1:  # we need this conditional for num-processes=1
+        if gate_x.size(0) != 1:  # These conditionals are for num-processes=1
             gate_x = gate_x.squeeze()
         if len(gate_h.shape)==3:
             gate_h = gate_h.squeeze(0)
