@@ -153,14 +153,17 @@ class NNBase(nn.Module):
 
     def _forward_gru(self, x, hxs, masks):
         if x.size(0) == hxs.size(0):
+            """
+            x.shape     torch.Size([32, 3])
+            hxs.shape   torch.Size([32, 64])
+            masks.shape torch.Size([32, 1])
+            masks[start_idx].view(1, -1, 1)     torch.Size([1, 32, 1])
+            """
             x, hxs, internals = self.gru(x.unsqueeze(0),
                                          (hxs * masks).unsqueeze(0))
             """
-            x.shape     torch.Size([1, 32, 64]) (diff from below)
-            hxs.shape   torch.Size([1, 32, 64]) (same as below)
-            masks.shape torch.Size([32, 1])     (diff from below)
-            masks[start_idx].view(1, -1, 1)     torch.Size([1, 32, 1])
-
+            x           torch.Size([1, 32, 64])
+            hxs         torch.Size([1, 32, 64])
             """
             x = x.squeeze(0)
             hxs = hxs.squeeze(0)
@@ -212,7 +215,10 @@ class NNBase(nn.Module):
                 rnn_scores, hxs, internals = self.gru(
                     x[start_idx:end_idx],
                     hxs * masks[start_idx].view(1, -1, 1))
-
+                """
+                rnn_scores  torch.Size([40, 32, 64])
+                hxs         torch.Size([1, 32, 64])
+                """
                 outputs.append(rnn_scores)
 
             # assert len(outputs) == T

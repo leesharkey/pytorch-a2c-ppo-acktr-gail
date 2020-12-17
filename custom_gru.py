@@ -30,22 +30,24 @@ class CustomGRU(nn.Module):
             True if successful, False otherwise.
 
         """
-        outs = []
+        hxs = []
+        rs = []
+        zs = []
+        hhats = []
         ht = h0
 
-        if len(x.shape) == 2:
-            tsteps = 1
-        else:
-            tsteps = x.size(0)
-
-
-        for t in range(tsteps):
-            ht, rt, zt = self.gru_cell(x[t, :, :], ht)
-            outs.append(ht)
-
-        out = outs[-1].squeeze()
-
-        return out
+        for t in range(x.size(0)):
+            ht, rt, zt, hhat = self.gru_cell(x[t, :, :], ht)
+            hxs.append(ht)
+            rs.append(rt)
+            zs.append(zt)
+            hhats.append(hhat)
+        last_hx = hxs[-1]
+        hxs = torch.cat(hxs)
+        internals = {'r': torch.cat(rs),
+                     'z': torch.cat(zs),
+                     'hhat': torch.cat(hhats)}
+        return hxs, last_hx, internals
 
 
 class GRUCell(nn.Module):
@@ -69,35 +71,25 @@ class GRUCell(nn.Module):
             w.data.uniform_(-std, std)
 
     def forward(self, x, hidden):
-        """Steps the GRUCell forward 1 time.
 
-        Args:
-            x: Observations. Shape either [numproc, obssize] or
-                [num_timesteps, numproc, obssize]
-            h: Current hidden state.
-
-        Returns:
-            True if successful, False otherwise.
-
-        """
-        #TODO implement GRU with right dimensions etc. and returning the
-        # desired properties.
         x = x.view(-1, x.size(1))
 
         gate_x = self.x2h(x)
         gate_h = self.h2h(hidden)
 
-        gate_x = gate_x.squeeze()
-        gate_h = gate_h.squeeze()
+        if gate_x.size(0) != 1:  # we need this conditional for num-processes=1
+            gate_x = gate_x.squeeze()
+        if len(gate_h.shape)==3:
+            gate_h = gate_h.squeeze(0)
 
         i_r, i_i, i_n = gate_x.chunk(3, 1)
         h_r, h_i, h_n = gate_h.chunk(3, 1)
 
-        resetgate = F.sigmoid(i_r + h_r)
-        inputgate = F.sigmoid(i_i + h_i)
-        newgate = F.tanh(i_n + (resetgate * h_n))
+        rt = F.sigmoid(i_r + h_r)  # reset gate vector
+        zt = F.sigmoid(i_i + h_i)  # update gate vector
+        hhat = F.tanh(i_n + (rt * h_n))  # candidate activation vector
 
-        hy = newgate + inputgate * (hidden - newgate)
+        ht = hhat + zt * (hidden - hhat)
 
-        return hy
+        return ht, rt, zt, hhat
 

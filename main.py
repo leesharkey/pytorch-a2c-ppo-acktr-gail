@@ -315,7 +315,7 @@ def main():
 
             rollouts.insert(obs, recurrent_hidden_states, action,
                             action_log_prob, value, reward, masks,
-                            bad_masks, p_dists)#TODOnow internals
+                            bad_masks, p_dists, internals)
 
         with torch.no_grad():
             next_value = actor_critic.get_value(

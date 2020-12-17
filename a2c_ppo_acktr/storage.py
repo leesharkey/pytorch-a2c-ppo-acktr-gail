@@ -18,7 +18,10 @@ class RolloutStorage(object):
         self.action_log_probs = torch.zeros(num_steps, num_processes, 1)
         self.episode_len = num_steps
 
-        #TODOnow internals
+        # Internals
+        self.rs = torch.zeros_like(self.recurrent_hidden_states)
+        self.zs = torch.zeros_like(self.recurrent_hidden_states)
+        self.hhats = torch.zeros_like(self.recurrent_hidden_states)
 
         if action_space.__class__.__name__ == 'Discrete':
             action_shape = 1
@@ -54,13 +57,18 @@ class RolloutStorage(object):
         self.masks = self.masks.to(device)
         self.bad_masks = self.bad_masks.to(device)
         self.p_dists = self.p_dists.to(device)
-        # TODOnow internals
 
+        # Internals
+        self.rs = self.rs.to(device)
+        self.zs = self.rs.to(device)
+        self.hhats = self.rs.to(device)
+
+        # Timestep info
         self.episode_step_idxs = self.episode_step_idxs.to(device)
         self.global_step_idxs  = self.global_step_idxs.to(device)
 
     def insert(self, obs, recurrent_hidden_states, actions, action_log_probs,
-               value_preds, rewards, masks, bad_masks, p_dists):
+               value_preds, rewards, masks, bad_masks, p_dists, internals):
         self.obs[self.step + 1].copy_(obs)
         self.recurrent_hidden_states[self.step +
                                      1].copy_(recurrent_hidden_states)
@@ -75,8 +83,12 @@ class RolloutStorage(object):
         if self.step == 0:
             self.p_dists[self.step].copy_(p_dists)
 
-        # TODOnow internals
+        # Internals
+        self.rs[self.step + 1].copy_(internals['r'])
+        self.zs[self.step + 1].copy_(internals['z'])
+        self.hhats[self.step + 1].copy_(internals['hhat'])
 
+        # Timestep info
         self.episode_step_idxs[self.step] = self.episode_step
         self.global_step_idxs[self.step]  = self.global_step
 
@@ -85,9 +97,11 @@ class RolloutStorage(object):
         self.global_step += 1
 
     def save_experimental_data(self, save_dir):
-        # TODOnow internals
         save_dict = {'obs': self.obs.clone().cpu().numpy(),
                      'recurrent_hidden_states': self.recurrent_hidden_states.clone().cpu().numpy(),
+                     'r_vec': self.rs.clone().cpu().numpy(),
+                     'z_vec': self.zs.clone().cpu().numpy(),
+                     'hhat': self.hhats.clone().cpu().numpy(),
                      'rewards': self.rewards.clone().cpu().numpy(),
                      'value_preds': self.value_preds.clone().cpu().numpy(),
                      'returns': self.returns.clone().cpu().numpy(),
