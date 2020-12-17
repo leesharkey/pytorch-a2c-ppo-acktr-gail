@@ -288,7 +288,7 @@ def main():
 
         for step in range(200):
             # Sample actions
-            with torch.no_grad(): #TODOnow internals
+            with torch.no_grad():
                 value, action, action_log_prob, recurrent_hidden_states, internals  = \
                     actor_critic.act(rollouts.obs[step],
                                      rollouts.recurrent_hidden_states[step],

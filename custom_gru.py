@@ -30,17 +30,21 @@ class CustomGRU(nn.Module):
             True if successful, False otherwise.
 
         """
-        # x arrives as shape either [numproc, obssize] or [num_timesteps, numproc, obssize]
         outs = []
         ht = h0
 
-        for t in range(x.size(1)):
+        if len(x.shape) == 2:
+            tsteps = 1
+        else:
+            tsteps = x.size(0)
+
+
+        for t in range(tsteps):
             ht, rt, zt = self.gru_cell(x[t, :, :], ht)
             outs.append(ht)
 
         out = outs[-1].squeeze()
 
-        # out.size() --> 100, 10
         return out
 
 
