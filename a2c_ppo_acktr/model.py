@@ -17,7 +17,6 @@ class Policy(nn.Module):
     def __init__(self, obs_shape, action_space, base=None, base_kwargs=None):
         super(Policy, self).__init__()
 
-        # self.args = args
         if base_kwargs is None:
             base_kwargs = {}
         if base is None:
@@ -129,7 +128,6 @@ class NNBase(nn.Module):
         self._recurrent = recurrent
 
         if recurrent:
-            # self.gru = nn.GRU(recurrent_input_size, hidden_size)
             self.gru = CustomGRU(recurrent_input_size, hidden_size)
             for name, param in self.gru.named_parameters():
                 if 'bias' in name:
@@ -153,18 +151,8 @@ class NNBase(nn.Module):
 
     def _forward_gru(self, x, hxs, masks):
         if x.size(0) == hxs.size(0):
-            """
-            x.shape     torch.Size([32, 3])
-            hxs.shape   torch.Size([32, 64])
-            masks.shape torch.Size([32, 1])
-            masks[start_idx].view(1, -1, 1)     torch.Size([1, 32, 1])
-            """
             x, hxs, internals = self.gru(x.unsqueeze(0),
                                          (hxs * masks).unsqueeze(0))
-            """
-            x           torch.Size([1, 32, 64])
-            hxs         torch.Size([1, 32, 64])
-            """
             x = x.squeeze(0)
             hxs = hxs.squeeze(0)
         else:
@@ -204,21 +192,10 @@ class NNBase(nn.Module):
                 start_idx = has_zeros[i]
                 end_idx = has_zeros[i + 1]
 
-                """
-                x.shape     torch.Size([40, 32, 3])
-                hxs.shape   torch.Size([1, 32, 64])
-                masks.shape torch.Size([40, 32])
-                masks[start_idx].view(1, -1, 1)     torch.Size([1, 32, 1])
-
-                """
-
                 rnn_scores, hxs, internals = self.gru(
                     x[start_idx:end_idx],
                     hxs * masks[start_idx].view(1, -1, 1))
-                """
-                rnn_scores  torch.Size([40, 32, 64])
-                hxs         torch.Size([1, 32, 64])
-                """
+
                 outputs.append(rnn_scores)
 
             # assert len(outputs) == T
@@ -240,16 +217,6 @@ class MLPBase(NNBase):
 
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
                                constant_(x, 0), np.sqrt(2))
-
-        # self.actor = nn.Sequential(
-        #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-        #     init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
-
-        # self.critic = nn.Sequential(
-        #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-        #     init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
-
-        # self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
         self.actor  = nn.Identity(num_inputs)
         self.critic = nn.Identity(num_inputs)
